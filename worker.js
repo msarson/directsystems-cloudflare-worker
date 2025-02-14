@@ -31,7 +31,16 @@ export default {
         } catch (error) {
             console.error(`❌ Worker Error: ${error.message} | Request: ${request.method} ${url.href}`);
 
-            // Log if it's an API request failure
+            // Handle static assets separately
+            if (url.pathname.match(/\.(jpg|jpeg|png|gif|webp|svg|css|js|woff|woff2|ttf|eot|ico)$/i)) {
+                console.warn(`⚠️ Static asset failover triggered for: ${url.href}`);
+
+                // Redirect missing static files to GitHub Pages version
+                let failoverAssetURL = `https://msarson.github.io/directsystems-cloudflare-worker${url.pathname}`;
+                return fetch(failoverAssetURL);
+            }
+
+            // If the request is for `/directservice`, return API-specific failover response
             if (url.pathname.startsWith("/directservice")) {
                 console.warn(`⚠️ API Failover Triggered for: ${url.href}`);
 
