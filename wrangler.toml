@@ -1,0 +1,4 @@
+name = "blue-moon-1d97"
+type = "javascript"
+main = "worker.js"   # <- Ensure this matches your file
+compatibility_date = "2025-02-14"
