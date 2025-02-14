@@ -4,21 +4,28 @@ export default {
         let originURL = `https://${host}`;
 
         try {
-            // Try fetching from the original server
+            // Ensure correct headers (strip out Cloudflare-specific ones)
+            let modifiedHeaders = new Headers(request.headers);
+            modifiedHeaders.delete("cf-connecting-ip");
+            modifiedHeaders.delete("cf-ray");
+            modifiedHeaders.delete("cf-visitor");
+
             const response = await fetch(originURL, {
                 method: request.method,
-                headers: request.headers
+                headers: modifiedHeaders
             });
 
-            // If response is good, return the original content
             if (response.ok) {
                 return response;
+            } else {
+                throw new Error(`Fetch failed with status: ${response.status}`);
             }
         } catch (error) {
-            // If request fails (server offline), serve the failover page
+            console.error("Worker Error:", error); // Logs error in Cloudflare Worker console
+
             return new Response(`<!DOCTYPE html>
             <html>
-            <head><title>Our Service Temporarily Unavailable</title></head>
+            <head><title>Service Temporarily Unavailable</title></head>
             <body>
                 <h1>Direct Systems is Temporarily Offline</h1>
                 <p>Our office is currently experiencing network issues. We will be back online soon.</p>
