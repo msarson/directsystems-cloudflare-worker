@@ -18,7 +18,7 @@ export default {
             // If request fails (server offline), serve the failover page
             return new Response(`<!DOCTYPE html>
             <html>
-            <head><title>Service Temporarily Unavailable</title></head>
+            <head><title>Our Service Temporarily Unavailable</title></head>
             <body>
                 <h1>Direct Systems is Temporarily Offline</h1>
                 <p>Our office is currently experiencing network issues. We will be back online soon.</p>
