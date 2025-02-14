@@ -4,6 +4,7 @@ export default {
         let originURL = `https://${host}`;
 
         try {
+            // Ensure correct headers (strip out Cloudflare-specific ones)
             let modifiedHeaders = new Headers(request.headers);
             modifiedHeaders.delete("cf-connecting-ip");
             modifiedHeaders.delete("cf-ray");
@@ -20,27 +21,10 @@ export default {
                 throw new Error(`Fetch failed with status: ${response.status}`);
             }
         } catch (error) {
-            console.error("Worker Error:", error);
+            console.error("Worker Error:", error); // Logs error in Cloudflare Worker console
 
-            return new Response(`<!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Service Temporarily Unavailable</title>
-                <link rel="stylesheet" href="https://msarson.github.io/directsystems-cloudflare-worker/static/styles.css">
-            </head>
-            <body>
-                <div class="container">
-                    <h1>Direct Systems is Temporarily Offline</h1>
-                    <p>Our office is currently experiencing network issues. We will be back online soon.</p>
-                    <p>Please check back later or contact us at <a href="mailto:support@directsystems.com">support@directsystems.com</a></p>
-                </div>
-            </body>
-            </html>`, {
-                headers: { "Content-Type": "text/html" },
-                status: 503
-            });
+            // Fetch and return the hosted failover page from GitHub Pages
+            return fetch("https://msarson.github.io/directsystems-cloudflare-worker/static/failover.html");
         }
     }
 };
