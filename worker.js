@@ -33,9 +33,9 @@ export default {
                 return response;
             }
 
-            // Handle Cloudflare 521 error explicitly
-            if (response.status === 521) {
-                console.warn(`⚠️ 521 Detected - Serving Failover`);
+            // Explicitly handle Cloudflare-origin errors
+            if ([521, 522, 523, 524, 525, 526].includes(response.status)) {
+                console.warn(`⚠️ Cloudflare Error ${response.status} Detected - Serving Failover`);
                 return fetch("https://msarson.github.io/directsystems-cloudflare-pages/failover.html");
             }
 
