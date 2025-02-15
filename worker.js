@@ -1,20 +1,22 @@
 export default {
     async fetch(request, env, ctx) {
         let url = new URL(request.url);
-
-        // Define the primary backend URL (your main service)
-        let primaryService = `https://${url.hostname}${url.pathname}${url.search}`;
-
-        // Define GitHub Pages failover URL
-        let failoverPage = "https://msarson.github.io/directsystems-cloudflare-pages/failover.html";
+        let githubBase = "https://msarson.github.io/directsystems-cloudflare-pages";
+        let originURL = `${githubBase}${url.pathname}${url.search}`; // Preserve full path & query params
 
         try {
             // Log incoming request details
             console.log(`Incoming request: ${request.method} ${url.href}`);
 
-            // Ensure correct headers (strip out Cloudflare-specific ones)
+            // Clone request headers and modify them
             let modifiedHeaders = new Headers(request.headers);
-            modifiedHeaders.delete("cf-connecting-ip");
+
+            // Preserve original client IP
+            if (request.headers.has("X-Forwarded-For")) {
+                modifiedHeaders.set("CF-Connecting-IP", request.headers.get("X-Forwarded-For"));
+            }
+
+            // Remove Cloudflare-specific headers
             modifiedHeaders.delete("cf-ray");
             modifiedHeaders.delete("cf-visitor");
 
@@ -25,8 +27,7 @@ export default {
                 body: request.method !== "GET" && request.method !== "HEAD" ? await request.text() : null
             };
 
-            // Try fetching the primary service
-            const response = await fetch(primaryService, fetchOptions);
+            const response = await fetch(originURL, fetchOptions);
 
             if (response.ok) {
                 console.log(`✅ Request succeeded: ${url.href} (Status: ${response.status})`);
@@ -37,9 +38,29 @@ export default {
         } catch (error) {
             console.error(`❌ Worker Error: ${error.message} | Request: ${request.method} ${url.href}`);
 
-            // If offline, serve the GitHub Pages failover page
-            console.warn(`⚠️ Serving failover page: ${failoverPage}`);
-            return fetch(failoverPage);
+            // Handle static assets separately
+            if (url.pathname.match(/\.(jpg|jpeg|png|gif|webp|svg|css|js|woff|woff2|ttf|eot|ico)$/i)) {
+                console.warn(`⚠️ Static asset failover triggered for: ${url.href}`);
+                return fetch(`${githubBase}${url.pathname}`);
+            }
+
+            // API failover response
+            if (url.pathname.startsWith("/directservice")) {
+                console.warn(`⚠️ API Failover Triggered for: ${url.href}`);
+
+                return new Response(JSON.stringify({
+                    error: "Service temporarily unavailable",
+                    message: "The Direct Systems API is currently offline due to network issues.",
+                    status: 503
+                }), {
+                    headers: { "Content-Type": "application/json" },
+                    status: 503
+                });
+            }
+
+            // Website failover fallback
+            console.warn(`⚠️ Website Failover Triggered for: ${url.href}`);
+            return fetch(`${githubBase}/failover.html`);
         }
     }
 };
