@@ -1,15 +1,12 @@
 export default {
     async fetch(request, env, ctx) {
         let url = new URL(request.url);
-
-        // Define backend URL
-        let originURL = `https://www.directsystems.com${url.pathname}${url.search}`; // Your actual backend
+        let originURL = `https://www.directsystems.com${url.pathname}${url.search}`;
 
         console.log(`🔹 Incoming request: ${request.method} ${url.href}`);
         console.log(`🔹 Forwarding request to: ${originURL}`);
 
         try {
-            // Clone headers
             let modifiedHeaders = new Headers(request.headers);
 
             // Preserve original client IP
@@ -22,7 +19,6 @@ export default {
             modifiedHeaders.delete("cf-ray");
             modifiedHeaders.delete("cf-visitor");
 
-            // Set up fetch options
             let fetchOptions = {
                 method: request.method,
                 headers: modifiedHeaders,
@@ -35,10 +31,17 @@ export default {
             if (response.ok) {
                 console.log(`✅ Request succeeded: ${url.href} (Status: ${response.status})`);
                 return response;
-            } else {
-                console.warn(`⚠️ Non-200 response: ${response.status}`);
-                return response; // Pass the real error through
             }
+
+            // Handle Cloudflare 521 error explicitly
+            if (response.status === 521) {
+                console.warn(`⚠️ 521 Detected - Serving Failover`);
+                return fetch("https://msarson.github.io/directsystems-cloudflare-pages/failover.html");
+            }
+
+            console.warn(`⚠️ Non-200 response: ${response.status}`);
+            return response; // Pass through other errors
+
         } catch (error) {
             console.error(`❌ Worker Error: ${error.message} | Request: ${request.method} ${url.href}`);
 
