@@ -1,7 +1,10 @@
 export default {
     async fetch(request, env, ctx) {
         let url = new URL(request.url);
-        let originURL = `https://${url.hostname}${url.pathname}${url.search}`; // Preserve full path & query params
+
+        // Point to your GitHub Pages repository
+        let githubBase = "https://msarson.github.io/directsystems-cloudflare-pages";
+        let originURL = `${githubBase}${url.pathname}${url.search}`; // Preserve full path & query params
 
         try {
             // Log incoming request details
@@ -36,7 +39,7 @@ export default {
                 console.warn(`⚠️ Static asset failover triggered for: ${url.href}`);
 
                 // Redirect missing static files to GitHub Pages version
-                let failoverAssetURL = `https://msarson.github.io/directsystems-cloudflare-worker${url.pathname}`;
+                let failoverAssetURL = `${githubBase}${url.pathname}`;
                 return fetch(failoverAssetURL);
             }
 
@@ -57,7 +60,7 @@ export default {
             // Log if it's a normal web request failure
             console.warn(`⚠️ Website Failover Triggered for: ${url.href}`);
 
-            return fetch("https://msarson.github.io/directsystems-cloudflare-worker/static/failover.html");
+            return fetch(`${githubBase}/static/failover.html`);
         }
     }
 };
